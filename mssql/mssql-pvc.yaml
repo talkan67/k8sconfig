@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mssql-pvc
+spec:
+  volumeName: mssql-pv-volume
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 16Gi
