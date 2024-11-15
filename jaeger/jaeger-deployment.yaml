@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger-server
+  namespace: monitoring-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger-server
+  template:
+    metadata:
+      labels:
+        app: jaeger-server
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        ports: 
+        - containerPort: 5775 
+          protocol: UDP 
+        - containerPort: 6831 
+          protocol: UDP 
+        - containerPort: 6832 
+          protocol: UDP 
+        - containerPort: 5778 
+          protocol: TCP 
+        - containerPort: 16686 
+          protocol: TCP 
+        - containerPort: 14268 
+          protocol: TCP 
+        - containerPort: 14250 
+          protocol: TCP 
+        - containerPort: 9411 
+          protocol: TCP
+        volumeMounts:
+        - name: jaeger-volume
+          mountPath: /data
+      volumes:
+      - name: jaeger-volume
+        persistentVolumeClaim:
+          claimName: jaeger-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-agent
+  namespace: monitoring-ns
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: agent-udp1
+    port: 5775
+    protocol: UDP
+    targetPort: 5775
+  - name: agent-udp2
+    port: 6831
+    protocol: UDP
+    targetPort: 6831
+  - name: agent-udp3
+    port: 6832
+    protocol: UDP
+    targetPort: 6832
+  - name: agent-tcp
+    port: 5778
+    protocol: TCP
+    targetPort: 5778
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: monitoring-ns
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: collector-tcp1
+    port: 14268
+    protocol: TCP
+    targetPort: 14268
+    nodePort: 30268
+  - name: collector-tcp2
+    port: 14250
+    protocol: TCP
+    targetPort: 14250
+    nodePort: 30250
+  - name: zipkin
+    port: 9411
+    protocol: TCP
+    targetPort: 30411
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: monitoring-ns
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: query
+    port: 16686
+    protocol: TCP
+    targetPort: 16686
+    nodePort: 30686
+  type: LoadBalancer  # Optional: for external access
